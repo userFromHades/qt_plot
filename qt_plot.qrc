@@ -1,0 +1,7 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>res/sizeh.png</file>
+    <file>res/sizev.png</file>
+    <file>res/settings.png</file>
+</qresource>
+</RCC>
