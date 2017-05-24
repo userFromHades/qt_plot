@@ -22,9 +22,11 @@ const char* glNumToStr (GLenum err){
 
 static
 void logGLError (){
+#ifdef DEBUG
     for(GLenum err; (err = glGetError()) != GL_NO_ERROR;)
     {
         QTextStream(stdout) <<"OpenGl error: "<< err<< " " << glNumToStr(err)
                             << endl;
     }
+#endif
 }

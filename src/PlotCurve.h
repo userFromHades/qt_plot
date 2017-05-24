@@ -15,6 +15,7 @@
 
 class PlotCurve;
 class PlotWidget;
+class PlotQuickItem;
 
 struct PlotPoint {
     float x;
@@ -94,6 +95,7 @@ private:
     QRectF rect;
 
     friend class PlotWidget;
+    friend class PlotQuickItem;
 
 };
 
