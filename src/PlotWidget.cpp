@@ -40,8 +40,9 @@ static qreal beginInterval(qreal begin, qreal step)
 
 PlotWidget::PlotWidget(QWidget *parent):
     QOpenGLWidget(parent),
-    program(this),
-    frame(0)
+    program(nullptr),
+    frame(0),
+    vao(nullptr)
 {
     foneColor = QColor(255, 255, 255); //nc
     bgFoneColor = QColor(155, 155, 155);
@@ -53,8 +54,10 @@ PlotWidget::PlotWidget(QWidget *parent):
 
 PlotWidget::~PlotWidget()
 {
-    vao.destroy();
-    program.removeAllShaders();
+    if (vao)
+        vao->destroy();
+    if (program)
+        program->removeAllShaders();
 }
 
 void PlotWidget::addCurve(PlotCurve* curve)
@@ -127,13 +130,14 @@ void PlotWidget::initializeGL()
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT,  GL_NICEST);
 
-    program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
-    program.addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
-    program.bindAttributeLocation("posAttr", 0);
-    program.link();
-    posAttr = program.attributeLocation("posAttr");
-    colorUnf = program.uniformLocation("col");
-    matrixUnf = program.uniformLocation("matrix");
+    program = new QOpenGLShaderProgram;
+    program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
+    program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
+    program->bindAttributeLocation("posAttr", 0);
+    program->link();
+    posAttr = program->attributeLocation("posAttr");
+    colorUnf = program->uniformLocation("col");
+    matrixUnf = program->uniformLocation("matrix");
 
 
     static GLfloat vertices[] = {
@@ -152,25 +156,27 @@ void PlotWidget::initializeGL()
         1.0,  0.0
     };
 
-    vao.create();
-    if (not vao.isCreated())
+    vao = new QOpenGLVertexArrayObject;
+    vao->create();
+    if (not vao->isCreated())
         QTextStream(stdout) <<"Can't create vao:"<<endl;
-    vao.bind();
+    vao->bind();
 
-    vbo.create();
-    if (not vbo.isCreated())
+    vbo = new QOpenGLBuffer;
+    vbo->create();
+    if (not vbo->isCreated())
         QTextStream(stdout) <<"Can't create vbo:"<<endl;
 
-    vbo.bind();
+    vbo->bind();
 
-    vbo.allocate(vertices, 16 * sizeof(GLfloat));
+    vbo->allocate(vertices, 16 * sizeof(GLfloat));
     logGLError();
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
-    vbo.release();
-    vao.release();
+    vbo->release();
+    vao->release();
 
 }
 
@@ -205,23 +211,23 @@ void PlotWidget::paintGL()
     glViewport( width() * marginForTextW,              height() * marginForTextH,
                 width() * (1.0 - 2.0* marginForTextW), height() * (1.0- 2.0* marginForTextH) );
 
-    program.bind();
+    program->bind();
     logGLError();
     {
         QMatrix4x4 matrix;
         matrix.ortho( -1.0 ,  1.0  ,
                       -1.0  , 1.0  , -1.0f, 1.0f);
 
-        program.setUniformValue(matrixUnf, matrix);
-        program.setUniformValue(colorUnf, foneColor);
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, foneColor);
         logGLError();
 
-        vao.bind();
+        vao->bind();
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         logGLError();
 
         drawMesh();
-        vao.release();
+        vao->release();
         logGLError();
     }
 
@@ -239,8 +245,8 @@ void PlotWidget::paintGL()
                       viewRect.top()  , viewRect.bottom()  , -1.0f, 1.0f);
         auto scale = curve->getScale();
         matrix.scale(scale.x(),scale.y());
-        program.setUniformValue(matrixUnf, matrix);
-        program.setUniformValue(colorUnf, curve->color);
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, curve->color);
         curve->draw();
     }
 
@@ -264,17 +270,17 @@ void PlotWidget::paintGL()
         matrix.scale((x2 - x1)/2.0,
                      (y2 - y1)/2.0);
 
-        program.setUniformValue(matrixUnf, matrix);
-        program.setUniformValue(colorUnf, selectColor);
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, selectColor);
         logGLError();
 
-        vao.bind();
+        vao->bind();
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         logGLError();
-        vao.release();
+        vao->release();
     }
 
-    program.release();
+    program->release();
     logGLError();
 
     drawTextMarcs();
@@ -316,8 +322,8 @@ void PlotWidget::drawMesh()
                       -1.0   ,      1.0 , -1.0f, 1.0f);
         matrix.translate(x,0.0,0.0);
 
-        program.setUniformValue(matrixUnf, matrix);
-        program.setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
 
         glDrawArrays(GL_LINES, 4, 2);
 
@@ -340,8 +346,8 @@ void PlotWidget::drawMesh()
                       viewRect.top()   ,  viewRect.bottom()    , -1.0f, 1.0f);
         matrix.translate(0.0,y,0.0);
 
-        program.setUniformValue(matrixUnf, matrix);
-        program.setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
 
         glDrawArrays(GL_LINES, 6, 2);
     }

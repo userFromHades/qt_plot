@@ -40,7 +40,10 @@ PlotCurve::~PlotCurve()
     for (unsigned int i = 0; i < parts.size(); i++) {
         delete parts[i];
     }
-    vao.destroy();
+
+    if(vao != nullptr)
+        vao->deleteLater();
+
 }
 
 void PlotCurve::chageRect(const PlotPoint& p)
@@ -123,24 +126,26 @@ void PlotCurve::draw (){
     if (points.empty())
         return;
 
-    if (not vao.isCreated()){
+    if (vao == nullptr){
         initializeOpenGLFunctions();
 
-        vao.create();
-        vao.bind();
+        vao = new QOpenGLVertexArrayObject;
+        vao->create();
+        vao->bind();
 
-        vbo.create();
+        vbo = new QOpenGLBuffer;
+        vbo->create();
 
-        vbo.bind();
+        vbo->bind();
 
-        vbo.allocate( maxPointsInVideo * 2 * sizeof(GLfloat));
+        vbo->allocate( maxPointsInVideo * 2 * sizeof(GLfloat));
         logGLError();
 
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
 
-        vbo.release();
-        vao.release();
+        vbo->release();
+        vao->release();
         logGLError();
 
     }
@@ -153,27 +158,27 @@ void PlotCurve::draw (){
             poinisInVideo = 0;
         }
 
-        vao.bind();
-        vbo.bind();
+        vao->bind();
+        vbo->bind();
 
-        auto ptr = (PlotPoint*)vbo.map(QOpenGLBuffer::WriteOnly);
+        auto ptr = (PlotPoint*)vbo->map(QOpenGLBuffer::WriteOnly);
         size_t totalPoints = std::min(maxPointsInVideo, points.size()-firstPointInVideo);
         size_t size = (totalPoints - poinisInVideo) * sizeof(PlotPoint);
         memcpy(ptr + poinisInVideo, points.data() + firstPointInVideo + poinisInVideo,  size );
-        vbo.unmap();
-        vbo.release();
-        vao.release();
+        vbo->unmap();
+        vbo->release();
+        vao->release();
 
         poinisInVideo = totalPoints;
     }
 
 
-    vao.bind();
+    vao->bind();
     logGLError();
 
     glDrawArrays(GL_LINE_STRIP, 0, poinisInVideo);
     logGLError();
 
-    vao.release();
+    vao->release();
     logGLError();
 }

@@ -80,15 +80,15 @@ private:
 
         Part ( uint _begin,  uint _count){
             begin = _begin;
-           count = _count;
+            count = _count;
         }
         void addPoint (const PlotPoint &p);
     };
 
     std::vector <Part*> parts;
 
-    QOpenGLVertexArrayObject vao;
-    QOpenGLBuffer vbo;
+    QOpenGLVertexArrayObject *vao = nullptr;
+    QOpenGLBuffer *vbo = nullptr;
     size_t poinisInVideo = 0;
     size_t firstPointInVideo = 0;
 

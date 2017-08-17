@@ -15,5 +15,5 @@ SOURCES += \
 
 RESOURCES += $$PWD/../qt_plot.qrc
 
-QT += gui widgets
+QT += gui widgets quick
 CONFIG += c++11

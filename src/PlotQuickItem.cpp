@@ -45,22 +45,26 @@ static qreal beginInterval(qreal begin, qreal step)
 PlotQuickItem::PlotQuickItem(QQuickItem *parrent)
 : QQuickPaintedItem(parrent),
     program(nullptr),
+    vao(nullptr),
     frame(0)
 {
     foneColor = QColor(255, 255, 255); //nc
     bgFoneColor = QColor(155, 155, 155);
     selectColor = QColor(180,180,180,180);
-	foregroundColor = QColor (0,0,0);
+    foregroundColor = QColor (0,0,0);
     drawSelectRect = false;
 
     viewRect.setRect(-1.0,-1.0,2.0,2.0);
 
-	setRenderTarget(QQuickPaintedItem::FramebufferObject);
+    setRenderTarget(QQuickPaintedItem::FramebufferObject);
 }
 
 PlotQuickItem::~PlotQuickItem()
 {
-	delete program;
+    if(program)
+        program->deleteLater();
+    if(vao)
+        vao->deleteLater();
 }
 
 void PlotQuickItem::addCurve(PlotCurve* curve)
@@ -81,6 +85,12 @@ void PlotQuickItem::delAllCurves()
     curves.clear();
 }
 
+void PlotQuickItem::deleteCurve(PlotCurve *curve){
+    auto it = std::find(curves.begin(),curves.end(),curve);
+    if (it != curves.end())
+        curves.erase(it);
+}
+
 std::vector<PlotCurve*> PlotQuickItem::getCurves()
 {
     return curves;
@@ -96,11 +106,11 @@ void PlotQuickItem::shiftEndTime(float timeEnd)
 
 QPointF  PlotQuickItem::screenToSpace (const QPoint& p) const{
 
-	qreal scaleW =  viewRect.width() / width()  / (1.0 - 2.0 * marginForTextW);
-	qreal scaleH =  viewRect.height()/ height() / (1.0 - 2.0 * marginForTextH);
+    qreal scaleW =  viewRect.width() / width()  / (1.0 - 2.0 * marginForTextW);
+    qreal scaleH =  viewRect.height()/ height() / (1.0 - 2.0 * marginForTextH);
 
-	return QPointF ( viewRect.left()   + (p.x() - width()  * 1.0 * marginForTextW) * scaleW,
-	                 viewRect.bottom() - (p.y() - height() * 1.0 * marginForTextH) * scaleH );
+    return QPointF ( viewRect.left()   + (p.x() - width()  * 1.0 * marginForTextW) * scaleW,
+                     viewRect.bottom() - (p.y() - height() * 1.0 * marginForTextH) * scaleH );
 
 }
 
@@ -124,122 +134,120 @@ static const char *fragmentShaderSource =
 
 void  PlotQuickItem::paint (QPainter *painter) {
 
-	if (not init)
-		initializeOpenGL ();
+    if (not init)
+        initializeOpenGL ();
 
-	painter->save();
-	painter->beginNativePainting();
+    painter->save();
+    painter->beginNativePainting();
 
-	marginForTextH = 25.0/height();
-	marginForTextW = 70.0/width();
+    marginForTextH = 25.0/height();
+    marginForTextW = 70.0/width();
 
+    //--------------------------
 
-
-	//--------------------------
-
-	//const qreal retinaScale = devicePixelRatio();
-	const qreal retinaScale = 1.0;
-	glViewport(0, 0, width() * retinaScale, height() * retinaScale);
-	logGLError();
+    //const qreal retinaScale = devicePixelRatio();
+    const qreal retinaScale = 1.0;
+    glViewport(0, 0, width() * retinaScale, height() * retinaScale);
+    logGLError();
 
 
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_LINE_SMOOTH);
-	glHint(GL_LINE_SMOOTH_HINT,  GL_NICEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_LINE_SMOOTH);
+    glHint(GL_LINE_SMOOTH_HINT,  GL_NICEST);
 
-	glClearColor(bgFoneColor.redF(),bgFoneColor.greenF(),bgFoneColor.blueF(),1.0);
-	glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	logGLError();
+    glClearColor(bgFoneColor.redF(),bgFoneColor.greenF(),bgFoneColor.blueF(),1.0);
+    glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    logGLError();
 
-	glViewport( width() * marginForTextW,              height() * marginForTextH,
-	            width() * (1.0 - 2.0* marginForTextW), height() * (1.0- 2.0* marginForTextH) );
+    glViewport( width() * marginForTextW,              height() * marginForTextH,
+                width() * (1.0 - 2.0* marginForTextW), height() * (1.0- 2.0* marginForTextH) );
 
-	program->bind();
-	logGLError();
-	{
-		QMatrix4x4 matrix;
-		matrix.ortho( -1.0 ,  1.0  ,
-		              -1.0  , 1.0  , -1.0f, 1.0f);
+    program->bind();
+    logGLError();
+    {
+        QMatrix4x4 matrix;
+        matrix.ortho( -1.0 ,  1.0  ,
+                      -1.0  , 1.0  , -1.0f, 1.0f);
 
-		program->setUniformValue(matrixUnf, matrix);
-		program->setUniformValue(colorUnf, foneColor);
-		logGLError();
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, foneColor);
+        logGLError();
 
-		vao.bind();
-		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-		logGLError();
+        vao->bind();
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        logGLError();
 
-		drawMesh();
-		vao.release();
-		logGLError();
-	}
+        drawMesh();
+        vao->release();
+        logGLError();
+    }
 
-	glLineWidth(2.5);
+    glLineWidth(2.5);
 
-	logGLError();
+    logGLError();
 
-	for (auto& curve : curves) {
+    for (auto& curve : curves) {
 
-		if (not curve->isVisible())
-			continue;
+        if (not curve->isVisible())
+            continue;
 
-		QMatrix4x4 matrix;
-		matrix.ortho( viewRect.left() ,  viewRect.right()  ,
-		              viewRect.bottom(), viewRect.top(), -1.0f, 1.0f);
-		auto scale = curve->getScale();
-		matrix.scale(scale.x(),scale.y());
-		program->setUniformValue(matrixUnf, matrix);
-		program->setUniformValue(colorUnf, curve->color);
-		curve->draw();
-	}
+        QMatrix4x4 matrix;
+        matrix.ortho( viewRect.left() ,  viewRect.right()  ,
+                      viewRect.bottom(), viewRect.top(), -1.0f, 1.0f);
+        auto scale = curve->getScale();
+        matrix.scale(scale.x(),scale.y());
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, curve->color);
+        curve->draw();
+    }
 
-	if (drawSelectRect and
-	    selectRect.width() and
-	    selectRect.height() )
-	{
+    if (drawSelectRect and
+        selectRect.width() and
+        selectRect.height() )
+    {
 
-		QMatrix4x4 matrix;
-		matrix.ortho(  -1.0 , 1.0,
-		                1.0 , -1.0 , -1.0f, 1.0f);
+        QMatrix4x4 matrix;
+        matrix.ortho(  -1.0 , 1.0,
+                        1.0 , -1.0 , -1.0f, 1.0f);
 
-		matrix.scale(2.0/viewRect.width(),
-		             2.0/viewRect.height());
+        matrix.scale(2.0/viewRect.width(),
+                     2.0/viewRect.height());
 
-		matrix.translate(- viewRect.center().x(),
-		                 - viewRect.center().y());
+        matrix.translate(- viewRect.center().x(),
+                         - viewRect.center().y());
 
-		matrix.translate(selectRect.center().x(),
-		                 selectRect.center().y());
+        matrix.translate(selectRect.center().x(),
+                         selectRect.center().y());
 
-		matrix.scale(selectRect.width()/2.0,
-		             selectRect.height()/2.0);
+        matrix.scale(selectRect.width()/2.0,
+                     selectRect.height()/2.0);
 
-		program->setUniformValue(matrixUnf, matrix);
-		program->setUniformValue(colorUnf, selectColor);
-		logGLError();
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, selectColor);
+        logGLError();
 
-		vao.bind();
-		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-		logGLError();
-		vao.release();
-	}
+        vao->bind();
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        logGLError();
+        vao->release();
+    }
 
-	program->release();
-	logGLError();
+    program->release();
+    logGLError();
 
-	++frame;
+    ++frame;
 
-	//----------------------------
+    //----------------------------
 
 
-	painter->endNativePainting();
+    painter->endNativePainting();
 
-	painter->restore();
-	drawTextMarcs(*painter);
+    painter->restore();
+    drawTextMarcs(*painter);
 
 }
 
@@ -256,15 +264,15 @@ void PlotQuickItem::initializeOpenGL()
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT,  GL_NICEST);
 
-	program = new QOpenGLShaderProgram;
+    program = new QOpenGLShaderProgram;
 
-	program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
-	program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
-	program->bindAttributeLocation("posAttr", 0);
-	program->link();
-	posAttr = program->attributeLocation("posAttr");
-	colorUnf = program->uniformLocation("col");
-	matrixUnf = program->uniformLocation("matrix");
+    program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
+    program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
+    program->bindAttributeLocation("posAttr", 0);
+    program->link();
+    posAttr = program->attributeLocation("posAttr");
+    colorUnf = program->uniformLocation("col");
+    matrixUnf = program->uniformLocation("matrix");
 
 
     static GLfloat vertices[] = {
@@ -283,39 +291,41 @@ void PlotQuickItem::initializeOpenGL()
         1.0,  0.0
     };
 
-    vao.create();
-    if (not vao.isCreated())
+    vao = new QOpenGLVertexArrayObject;
+    vao->create();
+    if (not vao->isCreated())
         QTextStream(stdout) <<"Can't create vao:"<<endl;
-    vao.bind();
+    vao->bind();
 
-    vbo.create();
-    if (not vbo.isCreated())
+    vbo = new QOpenGLBuffer;
+    vbo->create();
+    if (not vbo->isCreated())
         QTextStream(stdout) <<"Can't create vbo:"<<endl;
 
-    vbo.bind();
+    vbo->bind();
 
-    vbo.allocate(vertices, 16 * sizeof(GLfloat));
+    vbo->allocate(vertices, 16 * sizeof(GLfloat));
     logGLError();
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
-    vbo.release();
-    vao.release();
+    vbo->release();
+    vao->release();
 
-	init = true;
+    init = true;
 
 }
 
 void PlotQuickItem::drawTextWithCenter( QPainter &p ,QString &str, int x, int y)
 {
 
-	//p.begin(this);
+    //p.begin(this);
     const QFontMetrics fm = p.fontMetrics();
     int width  = fm.width(str);
     int height = fm.height();
-	p.drawText(QPoint(x - width/2 ,y + height/2),str);
-	//p.end();
+    p.drawText(QPoint(x - width/2 ,y + height/2),str);
+    //p.end();
 }
 
 void PlotQuickItem::drawMesh()
@@ -338,8 +348,8 @@ void PlotQuickItem::drawMesh()
                       -1.0   ,      1.0 , -1.0f, 1.0f);
         matrix.translate(x,0.0,0.0);
 
-		program->setUniformValue(matrixUnf, matrix);
-		program->setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
 
         glDrawArrays(GL_LINES, 4, 2);
 
@@ -359,11 +369,11 @@ void PlotQuickItem::drawMesh()
         QMatrix4x4 matrix;
 
         matrix.ortho(-1.0 ,      1.0    ,
-		              viewRect.bottom()   ,  viewRect.top()    , -1.0f, 1.0f);
+                      viewRect.bottom()   ,  viewRect.top()    , -1.0f, 1.0f);
         matrix.translate(0.0,y,0.0);
 
-		program->setUniformValue(matrixUnf, matrix);
-		program->setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
+        program->setUniformValue(matrixUnf, matrix);
+        program->setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
 
         glDrawArrays(GL_LINES, 6, 2);
     }
@@ -371,8 +381,8 @@ void PlotQuickItem::drawMesh()
 
 void PlotQuickItem::drawTextMarcs( QPainter &p )
 {
-	auto priorPen = p.pen();
-	p.setPen(foregroundColor);
+    auto priorPen = p.pen();
+    p.setPen(foregroundColor);
 
 
     QRectF rectMesh(viewRect.x() , viewRect.y() ,
@@ -392,8 +402,8 @@ void PlotQuickItem::drawTextMarcs( QPainter &p )
         char buff[256];
         sprintf (buff, "%.3f",(wBegin+i*wstep));
         QString text(buff);
-		drawTextWithCenter (p, text,x, height() * marginForTextH/2.0 );
-		drawTextWithCenter (p, text,x,height() * (1.0 - marginForTextH/2.0));
+        drawTextWithCenter (p, text,x, height() * marginForTextH/2.0 );
+        drawTextWithCenter (p, text,x,height() * (1.0 - marginForTextH/2.0));
     }
 
     qreal hstep = breakupInterval(rectMesh.height());
@@ -403,15 +413,15 @@ void PlotQuickItem::drawTextMarcs( QPainter &p )
     if (hBegin + cnt * hstep < viewRect.top())
         cnt++;
 
-	for (int i = 0; i < cnt; i++) {
-		float y = height() * (1.0 -  marginForTextH) - (1.0 - 2.0 * marginForTextH) * (hBegin + i * hstep - viewRect.y())/ (viewRect.height()) * height() ;
+    for (int i = 0; i < cnt; i++) {
+        float y = height() * (1.0 -  marginForTextH) - (1.0 - 2.0 * marginForTextH) * (hBegin + i * hstep - viewRect.y())/ (viewRect.height()) * height() ;
 
         char buff[256];
         sprintf (buff, "%.3f",(hBegin+i*hstep));
         QString text(buff);
-		drawTextWithCenter (p, text,width() * marginForTextW/2.0,y );
-		drawTextWithCenter (p,text,width() * (1.0 - marginForTextW/2.0),y );
+        drawTextWithCenter (p, text,width() * marginForTextW/2.0,y );
+        drawTextWithCenter (p,text,width() * (1.0 - marginForTextW/2.0),y );
     }
 
-	p.setPen(priorPen);
+    p.setPen(priorPen);
 }

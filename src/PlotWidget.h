@@ -65,11 +65,11 @@ private:
     GLuint                         colorUnf;
     GLuint                        matrixUnf;
 
-    QOpenGLShaderProgram            program;
+    QOpenGLShaderProgram           *program;
     int                               frame;
 
-    QOpenGLVertexArrayObject            vao;
-    QOpenGLBuffer                       vbo;
+    QOpenGLVertexArrayObject           *vao;
+    QOpenGLBuffer                      *vbo;
 
     float marginForTextH = 0.0;
     float marginForTextW = 0.0;
