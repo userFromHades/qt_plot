@@ -2,6 +2,7 @@ INCLUDEPATH += $$PWD
 
 HEADERS += \
     $$PWD/PlotCurve.h \
+    $$PWD/PlotCore.h \
     $$PWD/PlotWidget.h \
     $$PWD/PlotBehavior.h \
     $$PWD/glerrorlog.cpp \
@@ -9,6 +10,7 @@ HEADERS += \
 
 SOURCES += \
     $$PWD/PlotCurve.cpp \
+    $$PWD/PlotCore.cpp \
     $$PWD/PlotWidget.cpp \
     $$PWD/PlotBehavior.cpp \
     $$PWD/PlotQuickItem.cpp

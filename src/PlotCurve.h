@@ -94,6 +94,7 @@ private:
 
     QRectF rect;
 
+    friend class PlotCore;
     friend class PlotWidget;
     friend class PlotQuickItem;
 

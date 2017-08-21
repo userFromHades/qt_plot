@@ -168,7 +168,7 @@ PlotProperty::~PlotProperty(){
 }
 
 void PlotProperty::curvePropertyChanged (){
-    plot->update();
+    //Todo plot->update();
 }
 
 CurveProperty::CurveProperty(PlotCurve* _curve,QGridLayout* layout,const int& n){

@@ -1,5 +1,6 @@
 #include <QTextStream>
 
+#ifdef DEBUG
 static
 const char* glNumToStr (GLenum err){
     switch (err){
@@ -19,6 +20,7 @@ const char* glNumToStr (GLenum err){
             return "Undef error";
     }
 }
+#endif
 
 static
 void logGLError (){
