@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/ui.qml</file>
+        <file>qml/PlotUi.qml</file>
+    </qresource>
+</RCC>

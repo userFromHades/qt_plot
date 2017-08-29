@@ -1,0 +1,10 @@
+/build
+/debug
+/relese
+/moc
+
+Makefile*
+*Debug
+*Release
+*.user
+*.qmlc
