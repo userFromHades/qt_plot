@@ -1,5 +1,7 @@
 #include "PlotBehavior.h"
 
+#include <math.h>
+
 #include <QStackedLayout>
 #include <QToolTip>
 #include <QMouseEvent>
