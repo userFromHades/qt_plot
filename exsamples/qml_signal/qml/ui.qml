@@ -28,6 +28,7 @@ ApplicationWindow {
         bgFoneColor: Material.background
         foneColor: Material.background
         foregroundColor: Material.foreground
+        meshColor: "#888888"
 
     }
 

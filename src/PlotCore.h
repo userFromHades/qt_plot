@@ -12,6 +12,7 @@
     Q_PROPERTY (QColor     bgFoneColor READ getBgFoneColor     WRITE setBgFoneColor) \
     Q_PROPERTY (QColor     selectColor READ getSelectColor     WRITE setSelectColor) \
     Q_PROPERTY (QColor foregroundColor READ getForegroundColor WRITE setForegroundColor) \
+    Q_PROPERTY (QColor       meshColor READ getMeshColor       WRITE setMeshColor) \
     Q_PROPERTY (QSizeF   marginForText READ getMarginForText   WRITE setMarginForText) \
     Q_PROPERTY (bool  isDrawSelectRect READ isDrawSelectRect   WRITE setEnableSelectRect) \
     Q_PROPERTY (QRectF        viewRect READ      getViewRect   WRITE setViewRect) \
@@ -51,6 +52,7 @@ public:
     QColor                   getBgFoneColor () const {return bgFoneColor;}
     QColor                   getSelectColor () const {return selectColor;}
     QColor               getForegroundColor () const {return foregroundColor;}
+    QColor                     getMeshColor () const {return meshColor;}
     QSizeF                 getMarginForText () const {return QSizeF (marginForTextW,marginForTextH);}
     //set
     void                setEnableSelectRect (const bool    &_ = true) { drawSelectRect =_; onUpdate();} //
@@ -60,6 +62,7 @@ public:
     void                     setBgFoneColor (const QColor  &_)        { bgFoneColor    =_; onUpdate();} //
     void                     setSelectColor (const QColor  &_)        { selectColor    =_; onUpdate();} //
     void                 setForegroundColor (const QColor  &_)        { foregroundColor = _; onUpdate();}
+    void                       setMeshColor (const QColor  &_)        { meshColor       = _; onUpdate();}
     void                   setMarginForText (const QSizeF  &_)        { marginForTextW    =_.width();
                                                                         marginForTextH    =_.height(); onUpdate();} //
 
@@ -80,6 +83,7 @@ protected:
     QColor                      bgFoneColor;
     QColor                      selectColor;
     QColor                  foregroundColor;
+    QColor                        meshColor;
 
     GLuint                          posAttr;
     GLuint                         colorUnf;

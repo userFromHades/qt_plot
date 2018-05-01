@@ -51,6 +51,7 @@ PlotCore::PlotCore():
     bgFoneColor = QColor(155, 155, 155);
     selectColor = QColor(180,180,180,180);
     foregroundColor = QColor (0,0,0);
+    meshColor = QColor (127,127,127);
     drawSelectRect = false;
 
     viewRect.setRect(-1.0,-1.0,2.0,2.0);
@@ -348,7 +349,7 @@ void PlotCore::drawMesh()
         matrix.translate(x,0.0,0.0);
 
         program->setUniformValue(matrixUnf, matrix);
-        program->setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
+        program->setUniformValue(colorUnf, meshColor);
 
         glDrawArrays(GL_LINES, 4, 2);
 
@@ -372,7 +373,7 @@ void PlotCore::drawMesh()
         matrix.translate(0.0,y,0.0);
 
         program->setUniformValue(matrixUnf, matrix);
-        program->setUniformValue(colorUnf, QColor::fromRgbF(0.5, 0.5, 0.5));
+        program->setUniformValue(colorUnf, meshColor);
 
         glDrawArrays(GL_LINES, 6, 2);
     }
